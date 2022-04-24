@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
 const express = require("express");
+const mongoose = require("mongoose");
 const User = require("../models/User");
-const auth = require("../middleware/auth");
+const withAuth = require("../middleware/auth");
 
 const authRouter = express.Router();
 
@@ -32,8 +33,8 @@ authRouter.post("/login", (req, res) => {
 });
 
 authRouter.post("/register", function (req, res) {
-	const { email, password } = req.body;
-	const user = new User({ email, password });
+	const { email, password, firstName, lastName } = req.body;
+	const user = new User({ email, password, firstName, lastName, points: 0 });
 	user.save(function (err) {
 		if (err) {
 			console.error(err);
@@ -44,32 +45,39 @@ authRouter.post("/register", function (req, res) {
 	});
 });
 
-authRouter.post("/logout", function (req, res) {
-	const { email, password } = req.body;
+authRouter.post("/logout", withAuth, function (req, res) {
+	const email = req.email;
 	User.findOne({ email }, (err, user) => {
 		if (err) {
 			console.error(err);
 			res.status(500).json({
 				error: "Internal error please try again",
 			});
-		} else if (!user) {
-			res.status(401).json({
-				error: "Incorrect email or password",
-			});
-		} else if (user.verifyPassword(password)) {
+		} else {
 			res
 				.cookie("token", "", { httpOnly: true, expires: new Date() })
 				.sendStatus(200);
-		} else {
-			res.status(401).json({
-				error: "Incorrect email or password",
-			});
 		}
 	});
 });
 
-authRouter.get("/checkToken", auth, function (req, res) {
-	res.sendStatus(200);
+authRouter.get("/verifyToken", withAuth, function (req, res) {
+	const email = req.email;
+	User.findOne({ email }, (err, user) => {
+		user = user.toObject();
+		delete user.password;
+		res.status(200).json(user);
+	});
+});
+
+authRouter.get("/:id", function (req, res) {
+	const id = mongoose.Types.ObjectId(req.params.id.trim());
+
+	User.findById({ _id: id }, (err, user) => {
+		user = user.toObject();
+		delete user.password;
+		res.status(200).json(user);
+	});
 });
 
 module.exports = authRouter;

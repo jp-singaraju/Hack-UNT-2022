@@ -2,12 +2,11 @@ const mongoose = require("mongoose");
 
 const PostsSchema = new mongoose.Schema({
 	owner: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-	password: { type: String, required: true },
-	points: { type: Number },
+	title: { type: String, required: true },
+	description: { type: String, required: true },
+	img: { type: String },
+	type: { type: String },
+	link: { type: String },
 });
-
-PostsSchema.verifyPassword = (password) => {
-	return password === this.password;
-};
 
 module.exports = mongoose.model("Posts", PostsSchema);
